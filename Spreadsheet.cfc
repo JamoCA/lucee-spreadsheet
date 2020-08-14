@@ -297,7 +297,7 @@ component accessors="true"{
 	public void function addAutofilter( required workbook, string cellRange="", numeric row=1 ){
 		arguments.cellRange = arguments.cellRange.Trim();
 		if( arguments.cellRange.IsEmpty() ){
-			//default to all columns in the first (default) or specified row 
+			//default to all columns in the first (default) or specified row
 			var rowIndex = ( Max( 0, arguments.row -1 ) );
 			var cellRangeAddress = getCellRangeAddressFromColumnAndRowIndices( rowIndex, rowIndex, 0, ( getColumnCount( arguments.workbook ) -1 ) );
 			getActiveSheet( arguments.workbook ).setAutoFilter( cellRangeAddress );
@@ -314,6 +314,7 @@ component accessors="true"{
 		,boolean insert=true
 		,string delimiter=","
 		,boolean autoSize=false
+		,string autocast=""
 	){
 		var row = 0;
 		var cell = 0;
@@ -352,7 +353,16 @@ component accessors="true"{
 						cell = createCell( row, i );
 						cell.setCellStyle( oldCell.getCellStyle() );
 						var cellValue = getCellValueAsType( arguments.workbook, oldCell );
-						setCellValueAsType( arguments.workbook, oldCell, cellValue );
+						if (listfindnocase(arguments.autocast, "numeric") && isvalid("numeric", cellValue))
+							setCellValueAsType( arguments.workbook, oldCell, cellValue, "numeric" );
+						else if (listfindnocase(arguments.autocast, "date") && isvalid("date", cellValue))
+							setCellValueAsType( arguments.workbook, oldCell, cellValue, "date" );
+						else if (listfindnocase(arguments.autocast, "time") && isvalid("time", cellValue))
+							setCellValueAsType( arguments.workbook, oldCell, cellValue, "time" );
+						else if (listfindnocase(arguments.autocast, "boolean") && listfindnocase("yes,no,true,false", cellValue))
+							setCellValueAsType( arguments.workbook, oldCell, javacast("boolean", cellValue), "boolean" );
+						else
+							setCellValueAsType( arguments.workbook, oldCell, cellValue );
 						cell.setCellComment( oldCell.getCellComment() );
 					}
 				}
@@ -513,6 +523,7 @@ component accessors="true"{
 		,string delimiter=","
 		,boolean handleEmbeddedCommas=true /* When true, values enclosed in single quotes are treated as a single element like in ACF. Only applies when the delimiter is a comma. */
 		,boolean autoSizeColumns=false
+		,string autocast=""
 	){
 		if( arguments.KeyExists( "row" ) AND ( arguments.row LTE 0 ) )
 			Throw( type=this.getExceptionType(), message="Invalid row value", detail="The value for row must be greater than or equal to 1." );
@@ -534,7 +545,16 @@ component accessors="true"{
 		var cellIndex = arguments.column -1;
 		for( var cellValue in rowValues ){
 			var cell = createCell( theRow, cellIndex );
-			setCellValueAsType( arguments.workbook, cell, Trim( cellValue ) );
+			if (listfindnocase(arguments.autocast, "numeric") && isvalid("numeric", cellValue))
+				setCellValueAsType( arguments.workbook, cell, cellValue, "numeric" );
+			else if (listfindnocase(arguments.autocast, "date") && isvalid("date", cellValue))
+				setCellValueAsType( arguments.workbook, cell, cellValue, "date" );
+			else if (listfindnocase(arguments.autocast, "time") && isvalid("time", cellValue))
+				setCellValueAsType( arguments.workbook, cell, cellValue, "time" );
+			else if (listfindnocase(arguments.autocast, "boolean") && listfindnocase("yes,no,true,false", cellValue))
+				setCellValueAsType( arguments.workbook, cell, javacast("boolean", cellValue), "boolean" );
+			else
+				setCellValueAsType( arguments.workbook, cell, Trim( cellValue ) );
 			if( arguments.autoSizeColumns )
 				autoSizeColumn( arguments.workbook, arguments.column );
 			cellIndex++;
@@ -549,6 +569,7 @@ component accessors="true"{
 		,boolean insert=true
 		,boolean autoSizeColumns=false
 		,boolean includeQueryColumnNames=false
+		,string autocast=""
 	){
 		var dataIsQuery = IsQuery( arguments.data );
 		var dataIsArray = IsArray( arguments.data );
@@ -597,6 +618,14 @@ component accessors="true"{
 						default:
 							if( IsSimpleValue( value ) AND !Len( value ) ) //NB don't use member function: won't work if numeric
 								setCellValueAsType( arguments.workbook, cell, value, "blank" );
+							else if (listfindnocase(arguments.autocast, "numeric") && isvalid("numeric", value))
+								setCellValueAsType( arguments.workbook, cell, value, "numeric" );
+							else if (listfindnocase(arguments.autocast, "date") && isvalid("date", value))
+								setCellValueAsType( arguments.workbook, cell, value, "date" );
+							else if (listfindnocase(arguments.autocast, "time") && isvalid("time", value))
+								setCellValueAsType( arguments.workbook, cell, value, "time" );
+							else if (listfindnocase(arguments.autocast, "boolean") && listfindnocase("yes,no,true,false", value))
+								setCellValueAsType( arguments.workbook, cell, javacast("boolean", value), "boolean" );
 							else
 								setCellValueAsType( arguments.workbook, cell, value, "string" );
 					}
@@ -2615,7 +2644,7 @@ component accessors="true"{
 			}
 		}
 	}
-	
+
 	private struct function binaryInfo( required workbook ){
 		var documentProperties = arguments.workbook.getDocumentSummaryInformation();
 		var coreProperties = arguments.workbook.getSummaryInformation();
@@ -3007,7 +3036,7 @@ component accessors="true"{
 		}
 		return cssStyles.toString();
 	}
-	
+
 	/* Color */
 
 	private array function convertSignedRGBToPositiveTriplet( required any signedRGB ){
@@ -3224,4 +3253,4 @@ component accessors="true"{
 		return q;
 	}
 
-}
+} 
